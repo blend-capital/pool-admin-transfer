@@ -1,6 +1,6 @@
 [package]
 name = "pool-admin-transfer"
-version = "0.0.0"
+version = "1.0.0"
 authors = ["Script3 Ltd. <gm@script3.io>"]
 license = "MIT"
 edition = "2021"

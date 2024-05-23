@@ -732,7 +732,7 @@ checksum = "db23d408679286588f4d4644f965003d056e3dd5abcaaa938116871d7ce2fee7"
 
 [[package]]
 name = "pool-admin-transfer"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "blend-contract-sdk",
  "soroban-sdk",
