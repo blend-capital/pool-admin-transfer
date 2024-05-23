@@ -8,21 +8,27 @@ pub struct AdminTransfer;
 
 #[contractimpl]
 impl AdminTransfer {
-    /// Set the details for an admin transfer
+    /// Set the details for an admin transfer. Also sets the admin of the pool to this contract.
+    /// Must be called by the current admin of the pool.
     ///
     /// ### Arguments
     /// * `pool` - The address of the pool the admin transfer is for
-    /// * `new_admin` - The deadline ledger sequence number of the distribution
+    /// * `cur_admin` - The current admin of the pool
+    /// * `new_admin` - The new admin of the pool
     ///
     /// ### Panics
     /// * `AdminTransferExists` - If the contract has already been initialized
-    pub fn set_admin_transfer(e: Env, pool: Address, new_admin: Address) {
+    pub fn set_admin_transfer(e: Env, pool: Address, cur_admin: Address, new_admin: Address) {
         assert_with_error!(
             &e,
             !storage::has_admin_transfer(&e, &pool),
             ContractError::AdminTransferExists
         );
+        cur_admin.require_auth();
         storage::extend_instance(&e);
+
+        let pool_client = Client::new(&e, &pool);
+        pool_client.set_admin(&e.current_contract_address());
 
         storage::set_admin_transfer(&e, &pool, &new_admin);
     }

@@ -51,19 +51,79 @@ fn test_admin_transfer() {
     );
 
     // create admin transfer
-    let pool_client = PoolClient::new(&env, &pool);
-    pool_client.mock_all_auths().set_admin(&admin_transfer_id);
-    admin_transfer_client.set_admin_transfer(&pool, &new_admin);
+    admin_transfer_client
+        .mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &admin_transfer_id,
+                fn_name: &"set_admin_transfer",
+                args: vec![
+                    &env,
+                    pool.clone().into_val(&env),
+                    admin.clone().into_val(&env),
+                    new_admin.clone().into_val(&env),
+                ],
+                sub_invokes: &[MockAuthInvoke {
+                    contract: &pool,
+                    fn_name: &"set_admin",
+                    args: vec![&env, admin_transfer_id.clone().into_val(&env)],
+                    sub_invokes: &[],
+                }],
+            },
+        }])
+        .set_admin_transfer(&pool, &admin, &new_admin);
 
     // -> validate auths
-    assert_eq!(env.auths().len(), 0);
+    assert_eq!(
+        env.auths()[0],
+        (
+            admin.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    admin_transfer_id.clone(),
+                    Symbol::new(&env, "set_admin_transfer"),
+                    vec![
+                        &env,
+                        pool.clone().into_val(&env),
+                        admin.clone().into_val(&env),
+                        new_admin.clone().into_val(&env),
+                    ]
+                )),
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        pool.clone(),
+                        Symbol::new(&env, "set_admin"),
+                        vec![&env, admin_transfer_id.clone().into_val(&env),]
+                    )),
+                    sub_invocations: std::vec![]
+                }]
+            }
+        )
+    );
 
     // -> validate chain state
     let result = admin_transfer_client.get_admin_transfer(&pool);
     assert_eq!(result, Some(new_admin.clone()));
 
+    // -> validate admin is no longer the admin
+    let pool_client = PoolClient::new(&env, &pool);
+    let result = pool_client
+        .mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &pool,
+                fn_name: &"set_status",
+                args: vec![&env, 4u32.into_val(&env)],
+                sub_invokes: &[],
+            },
+        }])
+        .try_set_status(&4);
+    assert!(result.is_err());
+
     // validate another admin transfer cannot be created
-    let result = admin_transfer_client.try_set_admin_transfer(&pool, &sauron);
+    let result = admin_transfer_client
+        .mock_all_auths()
+        .try_set_admin_transfer(&pool, &admin, &sauron);
     assert_eq!(
         result.err(),
         Some(Ok(Error::from_contract_error(
