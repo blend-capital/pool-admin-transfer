@@ -18,4 +18,5 @@ pub enum ContractError {
     // Custom errors
     AdminTransferExists = 100,
     NoAdminTransferExists = 101,
+    AdminTransferComplete = 102,
 }

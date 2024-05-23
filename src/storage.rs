@@ -1,4 +1,10 @@
-use soroban_sdk::{Address, Env};
+use soroban_sdk::{contracttype, Address, Env};
+
+#[contracttype]
+pub struct TransferData {
+    pub cur_admin: Address,
+    pub new_admin: Address,
+}
 
 //********** Storage Utils **********//
 
@@ -31,11 +37,11 @@ pub fn has_admin_transfer(e: &Env, pool: &Address) -> bool {
 ///
 /// ### Arguments
 /// * `pool` - The address of the pool the admin transfer is for
-/// * `new_admin` - The address of the new admin
-pub fn set_admin_transfer(e: &Env, pool: &Address, new_admin: &Address) {
+/// * `admin_transfer` - The admin transfer details
+pub fn set_admin_transfer(e: &Env, pool: &Address, admin_transfer: &TransferData) {
     e.storage()
         .persistent()
-        .set::<Address, Address>(&pool, &new_admin);
+        .set::<Address, TransferData>(&pool, &admin_transfer);
     e.storage()
         .persistent()
         .extend_ttl(&pool, LEDGER_THRESHOLD_TRANSFER, LEDGER_BUMP_TRANSFER);
@@ -45,6 +51,14 @@ pub fn set_admin_transfer(e: &Env, pool: &Address, new_admin: &Address) {
 ///
 /// ### Arguments
 /// * `pool` - The address of the pool the admin transfer is for
-pub fn get_admin_transfer(e: &Env, pool: &Address) -> Option<Address> {
+pub fn get_admin_transfer(e: &Env, pool: &Address) -> Option<TransferData> {
     e.storage().persistent().get(&pool)
+}
+
+/// Get the new admin for an admin transfer
+///
+/// ### Arguments
+/// * `pool` - The address of the pool the admin transfer is for
+pub fn del_admin_transfer(e: &Env, pool: &Address) {
+    e.storage().persistent().remove(&pool)
 }
